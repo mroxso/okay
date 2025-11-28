@@ -133,7 +133,7 @@ func main() {
 		func(ctx context.Context, mp nip86.MethodParams) (reject bool, msg string) {
 			user := khatru.GetAuthed(ctx)
 			ownerPubKey := getEnv("RELAY_PUBKEY", "")
-			if ownerPubKey != "" && user != ownerPubKey {
+			if user != ownerPubKey {
 				return true, "go away, intruder"
 			}
 			return false, ""
