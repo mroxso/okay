@@ -14,22 +14,16 @@ type DBManager struct {
 	db *sql.DB
 }
 
-// NewDBManager creates a new database manager with the given database URL.
-// It establishes a connection, verifies connectivity, and initializes required tables.
-func NewDBManager(databaseURL string) (*DBManager, error) {
-	db, err := sql.Open("postgres", databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
+// NewDBManager creates a new database manager using an existing *sql.DB
+// (for example from the khatru eventstore backend). It does not take
+// ownership of the connection and therefore does not Close it.
+func NewDBManager(existing *sql.DB) (*DBManager, error) {
+	if existing == nil {
+		return nil, fmt.Errorf("existing db cannot be nil")
 	}
 
-	if err := db.Ping(); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	manager := &DBManager{db: db}
+	manager := &DBManager{db: existing}
 	if err := manager.initTables(); err != nil {
-		db.Close()
 		return nil, fmt.Errorf("failed to initialize database tables: %w", err)
 	}
 
@@ -185,9 +179,7 @@ func (dbm *DBManager) GetAllowedPubkeys() ([]string, error) {
 // This should be called when the DBManager is no longer needed.
 func (dbm *DBManager) Close() error {
 	if dbm.db != nil {
-		if err := dbm.db.Close(); err != nil {
-			return fmt.Errorf("failed to close database connection: %w", err)
-		}
+		// DBManager doesn't own the shared *sql.DB, so don't close it.
 	}
 	return nil
 }

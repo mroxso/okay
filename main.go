@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net"
@@ -23,6 +24,22 @@ func getEnv(key, fallback string) string {
 }
 
 func main() {
+	databaseURL := "postgresql://postgres:postgres@db:5432/khatru-relay?sslmode=disable"
+
+	sharedDB, err := sql.Open("postgres", databaseURL)
+	if err != nil {
+		panic(fmt.Sprintf("failed to open database connection: %v", err))
+	}
+	defer sharedDB.Close()
+
+	sharedDB.SetMaxOpenConns(10)
+	sharedDB.SetMaxIdleConns(5)
+	sharedDB.SetConnMaxIdleTime(0)
+
+	if err := sharedDB.Ping(); err != nil {
+		panic(fmt.Sprintf("failed to ping database: %v", err))
+	}
+
 	// create the relay instance
 	relay := khatru.NewRelay()
 
@@ -34,14 +51,14 @@ func main() {
 	relay.Info.Version = "0.0.1"
 	relay.Info.Software = "https://github.com/mroxso/okay"
 
-	// Initialize the event store database
-	db := postgresql.PostgresBackend{DatabaseURL: "postgresql://postgres:postgres@db:5432/khatru-relay?sslmode=disable"}
+	// Initialize the event store database (it manages its own pool)
+	db := postgresql.PostgresBackend{DatabaseURL: databaseURL}
 	if err := db.Init(); err != nil {
 		panic(err)
 	}
 
 	// Initialize the normal database manager for other data
-	dbManager, err := NewDBManager("postgresql://postgres:postgres@db:5432/khatru-relay?sslmode=disable")
+	dbManager, err := NewDBManager(sharedDB)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to initialize database manager: %v", err))
 	}
