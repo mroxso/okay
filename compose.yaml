@@ -20,9 +20,7 @@ services:
     volumes:
       - okay-db-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=khatru-relay
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/khatru-relay?sslmode=disable
     # expose:
     #   - 5432
     ports:
