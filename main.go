@@ -24,7 +24,7 @@ func getEnv(key, fallback string) string {
 }
 
 func main() {
-	databaseURL := "postgresql://postgres:postgres@db:5432/khatru-relay?sslmode=disable"
+	databaseURL := getEnv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/khatru-relay?sslmode=disable")
 
 	sharedDB, err := sql.Open("postgres", databaseURL)
 	if err != nil {
